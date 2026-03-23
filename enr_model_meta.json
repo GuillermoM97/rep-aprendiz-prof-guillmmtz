@@ -1,0 +1,7 @@
+{
+  "baseline_nacional": 0.04773177092286007,
+  "target_pos_frac_train_os": 0.15,
+  "threshold_fixed": 0.2,
+  "best_f1_threshold_grid": 0.65,
+  "best_iteration": 3998
+}
