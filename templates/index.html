@@ -299,7 +299,21 @@
           body: JSON.stringify({ text })
         });
 
-        const data = await response.json();
+        const responseText = await response.text();
+        let data = null;
+
+        try {
+          data = responseText ? JSON.parse(responseText) : null;
+        } catch (parseError) {
+          if (!response.ok) {
+            throw new Error(
+              `El backend respondió ${response.status} y no regresó JSON.`
+            );
+          }
+          throw new Error(
+            "La respuesta del backend no tiene un formato JSON válido."
+          );
+        }
 
         if (!response.ok) {
           throw new Error(data.error || `HTTP ${response.status}`);
