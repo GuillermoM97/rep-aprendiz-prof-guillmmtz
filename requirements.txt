@@ -9,12 +9,3 @@ transformers
 google-cloud-storage==3.2.0
 
 google-auth==2.49.0
-
-
-fastapi
-uvicorn[standard]
-pandas
-joblib
-xgboost
-scikit-learn
-

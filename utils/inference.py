@@ -90,6 +90,9 @@ def _download_model_from_gcs(target_dir: Path) -> str:
         "model_download_started",
         model_gcs_uri=MODEL_GCS_URI,
         local_cache_dir=str(target_dir),
+        bucket_name=bucket_name,
+        prefix=prefix,
+        blob_count=len(blobs),
     )
 
     for blob in blobs:
@@ -105,6 +108,7 @@ def _download_model_from_gcs(target_dir: Path) -> str:
         "model_download_finished",
         model_gcs_uri=MODEL_GCS_URI,
         local_cache_dir=str(target_dir),
+        downloaded_files=len([blob for blob in blobs if not blob.name.endswith("/")]),
     )
     return str(target_dir)
 
@@ -117,9 +121,16 @@ def _resolve_model_dir() -> str:
 
     local_dir = Path(MODEL_DIR)
     if local_dir.exists():
+        logger.info("model_dir_resolved_local", model_dir=str(local_dir))
         _resolved_model_dir = str(local_dir)
         return _resolved_model_dir
 
+    logger.info(
+        "model_dir_resolved_gcs",
+        model_dir=MODEL_DIR,
+        model_gcs_uri=MODEL_GCS_URI,
+        local_cache_dir=str(LOCAL_MODEL_CACHE_DIR),
+    )
     _resolved_model_dir = _download_model_from_gcs(LOCAL_MODEL_CACHE_DIR)
     return _resolved_model_dir
 
@@ -138,12 +149,20 @@ def _load_model() -> None:
             "Faltan dependencias del modelo. Instala torch, transformers y sentencepiece."
         ) from exc
 
+    torch.set_num_threads(int(os.getenv("TORCH_NUM_THREADS", "1")))
     resolved_model_dir = _resolve_model_dir()
     _device = "cuda" if torch.cuda.is_available() else "cpu"
     logger.info("model_loading_started", model_dir=resolved_model_dir, device=_device)
 
-    _tokenizer = AutoTokenizer.from_pretrained(resolved_model_dir)
-    _model = AutoModelForSeq2SeqLM.from_pretrained(resolved_model_dir).to(_device)
+    _tokenizer = AutoTokenizer.from_pretrained(
+        resolved_model_dir, local_files_only=True
+    )
+    logger.info("tokenizer_loaded", model_dir=resolved_model_dir)
+    _model = AutoModelForSeq2SeqLM.from_pretrained(
+        resolved_model_dir,
+        local_files_only=True,
+        low_cpu_mem_usage=True,
+    ).to(_device)
     _model.eval()
     _torch = torch
 
@@ -154,6 +173,7 @@ def predict_sentiment(text: str) -> Dict[str, Any]:
     if not str(text).strip():
         raise ValueError("El texto no puede estar vacío")
 
+    logger.info("prediction_requested", text_length=len(str(text)))
     _load_model()
     assert _torch is not None
     assert _tokenizer is not None
@@ -183,5 +203,22 @@ def predict_sentiment(text: str) -> Dict[str, Any]:
         "raw_output": raw,
         "label": pred,
         "model_dir": _resolve_model_dir(),
+        "device": _device,
+    }
+
+
+def get_model_debug_status() -> Dict[str, Any]:
+    local_dir = Path(MODEL_DIR)
+    cache_dir = LOCAL_MODEL_CACHE_DIR
+
+    return {
+        "model_dir_env": MODEL_DIR,
+        "model_gcs_uri": MODEL_GCS_URI,
+        "local_model_dir_exists": local_dir.exists(),
+        "local_model_cache_dir": str(cache_dir),
+        "local_model_cache_exists": cache_dir.exists(),
+        "resolved_model_dir": _resolved_model_dir,
+        "model_loaded": _model is not None,
+        "tokenizer_loaded": _tokenizer is not None,
         "device": _device,
     }

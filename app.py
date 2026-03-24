@@ -18,7 +18,7 @@ from types import FrameType
 
 from flask import Flask, jsonify, render_template, request
 
-from utils.inference import predict_sentiment
+from utils.inference import get_model_debug_status, predict_sentiment
 from utils.logging import logger
 
 app = Flask(__name__)
@@ -45,13 +45,16 @@ def llamar_api():
 def infer():
     payload = request.get_json(silent=True) or {}
     text = str(payload.get("text", "")).strip()
+    logger.info("infer_request_received", text_length=len(text))
 
     if not text:
+        logger.warning("infer_request_missing_text")
         return jsonify({"error": "Debes enviar un campo 'text' con contenido"}), 400
 
     try:
         result = predict_sentiment(text)
     except ValueError as exc:
+        logger.warning("infer_request_validation_error", error=str(exc))
         return jsonify({"error": str(exc)}), 400
     except RuntimeError as exc:
         logger.exception("model_runtime_error")
@@ -62,6 +65,14 @@ def infer():
 
     logger.info("inference_completed", label=result["label"])
     return jsonify(result)
+
+
+@app.route("/health/model")
+def health_model():
+    status = get_model_debug_status()
+    http_status = 200 if status["model_loaded"] else 503
+    logger.info("model_health_requested", **status)
+    return jsonify(status), http_status
 
 
 def shutdown_handler(signal_int: int, frame: FrameType) -> None:
