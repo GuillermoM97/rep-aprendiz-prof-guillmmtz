@@ -61,6 +61,16 @@ Invoke will handle establishing local virtual environments, etc. Task definition
     invoke dev
     ```
 
+3. Run the Streamlit interface in another terminal:
+    ```bash
+    streamlit run streamlit_app.py
+    ```
+    By default, the button calls `http://localhost:8080/`. You can override it with:
+    ```bash
+    export API_URL="https://YOUR_CLOUD_RUN_URL/"
+    streamlit run streamlit_app.py
+    ```
+
 #### Deploying a Cloud Run service
 
 1. Set Project Id:

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cliente API</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #f4f6fb;
+      color: #1f2937;
+    }
+
+    .card {
+      width: min(90vw, 520px);
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+    }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 18px;
+      background: #2563eb;
+      color: #ffffff;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    #resultado {
+      margin-top: 20px;
+      padding: 14px;
+      border-radius: 10px;
+      background: #e0f2fe;
+      min-height: 24px;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Interfaz de prueba</h1>
+    <p>Este botón hace una llamada real al endpoint <code>/api/llamar</code>.</p>
+    <button id="llamar-api">Llamar a la API</button>
+    <div id="resultado">Esperando acción...</div>
+  </main>
+
+  <script>
+    const button = document.getElementById("llamar-api");
+    const resultado = document.getElementById("resultado");
+
+    button.addEventListener("click", async () => {
+      resultado.textContent = "Llamando a la API...";
+
+      try {
+        const response = await fetch("/api/llamar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        resultado.textContent = data.message;
+      } catch (error) {
+        resultado.textContent = `Error al llamar la API: ${error.message}`;
+      }
+    });
+  </script>
+</body>
+</html>
