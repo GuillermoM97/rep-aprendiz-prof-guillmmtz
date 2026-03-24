@@ -15,11 +15,13 @@
 import flask
 from flask.testing import FlaskClient
 
+import app as app_module
+
 
 def test_get_index(app: flask.app.Flask, client: FlaskClient) -> None:
     res = client.get("/")
     assert res.status_code == 200
-    assert b"Llamar a la API" in res.data
+    assert b"Analizar comentario" in res.data
 
 
 def test_post_index(app: flask.app.Flask, client: FlaskClient) -> None:
@@ -31,3 +33,30 @@ def test_post_llamar_api(app: flask.app.Flask, client: FlaskClient) -> None:
     res = client.post("/api/llamar")
     assert res.status_code == 200
     assert res.json == {"message": "api llamada exitosamente"}
+
+
+def test_post_infer_requires_text(app: flask.app.Flask, client: FlaskClient) -> None:
+    res = client.post("/api/infer", json={})
+    assert res.status_code == 400
+    assert "error" in res.json
+
+
+def test_post_infer_success(
+    app: flask.app.Flask, client: FlaskClient, monkeypatch
+) -> None:
+    monkeypatch.setattr(
+        app_module,
+        "predict_sentiment",
+        lambda text: {
+            "text": text,
+            "raw_output": "positive",
+            "label": "positive",
+            "model_dir": "flan_t5_small_tass2020_mexico",
+            "device": "cpu",
+        },
+    )
+
+    res = client.post("/api/infer", json={"text": "Qué chido quedó eso"})
+    assert res.status_code == 200
+    assert res.json["label"] == "positive"
+    assert res.json["raw_output"] == "positive"

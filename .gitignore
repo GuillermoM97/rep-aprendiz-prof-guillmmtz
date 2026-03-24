@@ -24,6 +24,7 @@ __pycache__/
 
 # Exclude testing cache
 .pytest_cache/
+flan_t5_small_tass2020_mexico/
 
 # macOS
 **/.DS_Store

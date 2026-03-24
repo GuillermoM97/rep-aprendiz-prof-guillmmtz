@@ -159,6 +159,31 @@
       gap: 10px;
     }
 
+    .result-grid {
+      display: grid;
+      gap: 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .result-card {
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: #fcfdff;
+    }
+
+    .result-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .result-card span {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
     .helper {
       font-size: 0.95rem;
       color: var(--muted);
@@ -170,6 +195,10 @@
 
     @media (max-width: 900px) {
       .summary {
+        grid-template-columns: 1fr;
+      }
+
+      .result-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -215,17 +244,27 @@
         <label for="texto-entrada">Texto de entrada</label>
         <textarea id="texto-entrada" placeholder="Ejemplo: El servicio del banco fue rapidísimo y resolvieron mi problema en minutos."></textarea>
         <p class="helper">
-          Más adelante este campo se enviará a un endpoint de inferencia, por ejemplo <code>/api/infer</code>.
+          Este campo ya se enviará al endpoint de inferencia <code>/api/infer</code>.
         </p>
       </div>
 
       <div>
-        <button id="llamar-api">Llamar a la API</button>
+        <button id="llamar-api">Analizar comentario</button>
       </div>
 
       <div class="result-shell">
         <h2>Respuesta del backend</h2>
         <div id="resultado">Esperando acción...</div>
+        <div class="result-grid">
+          <div class="result-card">
+            <strong>Etiqueta predicha</strong>
+            <span id="label-predicha">Sin resultado</span>
+          </div>
+          <div class="result-card">
+            <strong>Salida cruda del modelo</strong>
+            <span id="raw-output">Sin resultado</span>
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -233,26 +272,46 @@
   <script>
     const button = document.getElementById("llamar-api");
     const resultado = document.getElementById("resultado");
+    const textInput = document.getElementById("texto-entrada");
+    const labelPredicha = document.getElementById("label-predicha");
+    const rawOutput = document.getElementById("raw-output");
 
     button.addEventListener("click", async () => {
-      resultado.textContent = "Llamando a la API...";
+      const text = textInput.value.trim();
+
+      if (!text) {
+        resultado.textContent = "Escribe un comentario antes de llamar a la API.";
+        labelPredicha.textContent = "Sin resultado";
+        rawOutput.textContent = "Sin resultado";
+        return;
+      }
+
+      resultado.textContent = "Llamando a la API de inferencia...";
+      labelPredicha.textContent = "Procesando...";
+      rawOutput.textContent = "Procesando...";
 
       try {
-        const response = await fetch("/api/llamar", {
+        const response = await fetch("/api/infer", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
-          }
+          },
+          body: JSON.stringify({ text })
         });
 
+        const data = await response.json();
+
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
+          throw new Error(data.error || `HTTP ${response.status}`);
         }
 
-        const data = await response.json();
-        resultado.textContent = data.message;
+        resultado.textContent = "api llamada exitosamente";
+        labelPredicha.textContent = data.label;
+        rawOutput.textContent = data.raw_output;
       } catch (error) {
         resultado.textContent = `Error al llamar la API: ${error.message}`;
+        labelPredicha.textContent = "Error";
+        rawOutput.textContent = "Error";
       }
     });
   </script>

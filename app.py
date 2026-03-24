@@ -16,8 +16,9 @@ import signal
 import sys
 from types import FrameType
 
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request
 
+from utils.inference import predict_sentiment
 from utils.logging import logger
 
 app = Flask(__name__)
@@ -38,6 +39,29 @@ def hello() -> str:
 def llamar_api():
     logger.info("api_llamada_exitosa")
     return jsonify({"message": "api llamada exitosamente"})
+
+
+@app.route("/api/infer", methods=["POST"])
+def infer():
+    payload = request.get_json(silent=True) or {}
+    text = str(payload.get("text", "")).strip()
+
+    if not text:
+        return jsonify({"error": "Debes enviar un campo 'text' con contenido"}), 400
+
+    try:
+        result = predict_sentiment(text)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except RuntimeError as exc:
+        logger.exception("model_runtime_error")
+        return jsonify({"error": str(exc)}), 503
+    except Exception:
+        logger.exception("inference_failed")
+        return jsonify({"error": "Ocurrió un error durante la inferencia"}), 500
+
+    logger.info("inference_completed", label=result["label"])
+    return jsonify(result)
 
 
 def shutdown_handler(signal_int: int, frame: FrameType) -> None:
