@@ -3,59 +3,263 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cliente API</title>
+  <title>Inferencia de Sentimiento</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      background: #f4f6fb;
-      color: #1f2937;
+    :root {
+      --bg: linear-gradient(135deg, #eef4ff 0%, #f8fafc 45%, #e8f3ee 100%);
+      --panel: #ffffff;
+      --text: #14213d;
+      --muted: #52607a;
+      --primary: #1d4ed8;
+      --primary-dark: #1e40af;
+      --border: #dbe4f0;
+      --accent: #dbeafe;
+      --success-bg: #e0f2fe;
     }
 
-    .card {
-      width: min(90vw, 520px);
-      background: #ffffff;
-      border-radius: 16px;
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .page {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 48px 24px 56px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid rgba(219, 228, 240, 0.9);
+      border-radius: 24px;
       padding: 32px;
-      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12);
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.10);
     }
 
     h1 {
       margin-top: 0;
+      margin-bottom: 12px;
+      font-size: clamp(2.3rem, 5vw, 4rem);
+      line-height: 1;
+    }
+
+    h2 {
+      margin-top: 0;
+      margin-bottom: 14px;
+      font-size: 1.2rem;
+    }
+
+    p {
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      margin-bottom: 14px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #dbeafe;
+      color: #1e3a8a;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .summary {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      padding: 14px;
+      border-radius: 16px;
+      background: #f8fbff;
+      border: 1px solid var(--border);
+    }
+
+    .metric strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .metric span {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .stack {
+      margin-top: 24px;
+      display: grid;
+      gap: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      padding: 16px;
+      resize: vertical;
+      font: inherit;
+      color: var(--text);
+      box-sizing: border-box;
+      background: #fcfdff;
+    }
+
+    textarea:focus {
+      outline: 2px solid rgba(37, 99, 235, 0.18);
+      border-color: var(--primary);
     }
 
     button {
       border: 0;
-      border-radius: 10px;
-      padding: 12px 18px;
-      background: #2563eb;
+      border-radius: 14px;
+      padding: 14px 22px;
+      background: var(--primary);
       color: #ffffff;
       font-size: 16px;
+      font-weight: 600;
       cursor: pointer;
     }
 
     button:hover {
-      background: #1d4ed8;
+      background: var(--primary-dark);
     }
 
     #resultado {
-      margin-top: 20px;
+      margin-top: 8px;
       padding: 14px;
-      border-radius: 10px;
-      background: #e0f2fe;
+      border-radius: 16px;
+      background: var(--success-bg);
       min-height: 24px;
+      font-size: 1.05rem;
+    }
+
+    .result-shell {
+      display: grid;
+      gap: 10px;
+    }
+
+    .helper {
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    .api-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: #eff6ff;
+      color: #1e40af;
+      font-size: 0.92rem;
+      font-weight: 600;
+    }
+
+    code {
+      font-family: Consolas, monospace;
+    }
+
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .summary {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
-  <main class="card">
-    <h1>Interfaz de prueba</h1>
-    <p>Este botón hace una llamada real al endpoint <code>/api/llamar</code>.</p>
-    <button id="llamar-api">Llamar a la API</button>
-    <div id="resultado">Esperando acción...</div>
+  <main class="page">
+    <section class="hero">
+      <article class="panel">
+        <span class="eyebrow">Demo de inferencia en Cloud Run</span>
+        <h1>Clasificación de sentimiento para texto en español</h1>
+        <p>
+          Este cascarón está pensado para evolucionar hacia tu servicio de inferencia con
+          <strong>FLAN-T5-small</strong> fine-tuneado para análisis de sentimiento.
+        </p>
+        <div class="summary">
+          <div class="metric">
+            <strong>Modelo objetivo</strong>
+            <span>FLAN-T5-small</span>
+          </div>
+          <div class="metric">
+            <strong>Tarea</strong>
+            <span>Sentimiento: positive, neutral, negative</span>
+          </div>
+          <div class="metric">
+            <strong>Dominio inicial</strong>
+            <span>Tweets y comentarios NPS</span>
+          </div>
+        </div>
+      </article>
+
+      <aside class="panel">
+        <h2>Resumen técnico</h2>
+        <p>
+          La solución usará un enfoque Seq2Seq para clasificar sentimiento en español de México
+          a partir de texto libre, con una interfaz preparada para enviar prompts o comentarios
+          a la API de inferencia.
+        </p>
+        <div class="api-badge">
+          Endpoint activo:
+          <code>/api/llamar</code>
+        </div>
+      </aside>
+    </section>
+
+    <section class="panel stack" style="margin-top: 24px;">
+      <div>
+        <h2>Probar llamada a la API</h2>
+        <p>
+          Este primer avance ya tiene la estructura para el flujo final. Por ahora, el botón
+          dispara una llamada real al backend y muestra la respuesta.
+        </p>
+      </div>
+
+      <div>
+        <label for="texto-entrada">Texto de entrada</label>
+        <textarea id="texto-entrada" placeholder="Ejemplo: El servicio del banco fue rapidísimo y resolvieron mi problema en minutos."></textarea>
+        <p class="helper">
+          Más adelante este campo se enviará a un endpoint de inferencia, por ejemplo <code>/api/infer</code>.
+        </p>
+      </div>
+
+      <div>
+        <button id="llamar-api">Llamar a la API</button>
+      </div>
+
+      <div class="result-shell">
+        <h2>Respuesta del backend</h2>
+        <div id="resultado">Esperando acción...</div>
+      </div>
+    </section>
   </main>
 
   <script>
